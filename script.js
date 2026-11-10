@@ -1,0 +1,562 @@
+document.addEventListener("DOMContentLoaded", function () {
+    /*
+        RS PIXELS RESPONSIVE CAROUSEL
+
+        This function controls:
+        - Services carousel
+        - Products carousel
+        - Reviews carousel
+        - Portfolio carousel
+
+        The amount of movement automatically changes
+        depending on the size of the screen and item.
+    */
+
+    const carouselButtons = document.querySelectorAll(
+        ".slider-arrow"
+    );
+    
+    carouselButtons.forEach(function (button) {
+
+        button.addEventListener("click", function () {
+
+            const targetId = button.getAttribute("data-target");
+
+            const direction = button.getAttribute("data-direction");
+
+            const track = document.getElementById(targetId);
+
+
+            if (!track) {
+                return;
+            }
+
+
+            /*
+                Find the first visible item.
+
+                This allows the carousel to work with:
+                - Images
+                - Review cards
+                - Portfolio cards
+            */
+
+            const item = track.querySelector(
+                ".slider-image, .review-card, .portfolio-card"
+            );
+
+
+            if (!item) {
+                return;
+            }
+
+
+            /*
+                Get the actual width of the item.
+
+                This makes the arrow responsive because
+                the movement changes automatically on
+                desktop, tablet, and mobile.
+            */
+
+            const itemWidth = item.getBoundingClientRect().width;
+
+
+            /*
+                Get the gap between carousel items.
+            */
+
+            const trackStyle = window.getComputedStyle(track);
+
+            const gap =
+                parseFloat(trackStyle.columnGap) ||
+                parseFloat(trackStyle.gap) ||
+                20;
+
+
+            /*
+                Total movement.
+
+                Item width + gap means the next item
+                will move into position correctly.
+            */
+
+            const scrollAmount = itemWidth + gap;
+
+
+            /*
+                Determine direction.
+            */
+
+            let movement = scrollAmount;
+
+
+            if (direction === "prev") {
+                movement = -scrollAmount;
+            }
+
+
+            /*
+                Smooth responsive scrolling.
+            */
+
+            track.scrollBy({
+                left: movement,
+                behavior: "smooth"
+            });
+
+        });
+
+    });
+
+
+    /*
+        PORTFOLIO ARROWS
+
+        The portfolio uses the same carousel system,
+        so the arrows also work on desktop and mobile.
+    */
+
+
+    /*
+        Prevent horizontal mouse-wheel scrolling
+        from causing unwanted page movement when
+        the user is directly interacting with a carousel.
+    */
+
+    const carouselTracks = document.querySelectorAll(
+        ".slider-track, .portfolio-grid"
+    );
+
+
+    carouselTracks.forEach(function (track) {
+
+        track.addEventListener(
+            "wheel",
+            function (event) {
+
+                /*
+                    Only use horizontal scrolling when
+                    the track can actually scroll horizontally.
+                */
+
+                if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
+
+                    if (track.scrollWidth > track.clientWidth) {
+
+                        track.scrollLeft += event.deltaY;
+
+                        event.preventDefault();
+
+                    }
+
+                }
+
+            },
+            {
+                passive: false
+            }
+        );
+
+    });
+
+
+    /*
+        KEYBOARD SUPPORT
+
+        When a carousel is focused, the user can
+        use the left and right arrow keys.
+    */
+
+    carouselTracks.forEach(function (track) {
+
+        track.setAttribute("tabindex", "0");
+
+
+        track.addEventListener("keydown", function (event) {
+
+            const item = track.querySelector(
+                ".slider-image, .review-card, .portfolio-card"
+            );
+
+
+            if (!item) {
+                return;
+            }
+
+
+            const itemWidth =
+                item.getBoundingClientRect().width;
+
+
+            const gap =
+                parseFloat(
+                    window.getComputedStyle(track).gap
+                ) || 20;
+
+
+            const movement = itemWidth + gap;
+
+
+            if (event.key === "ArrowRight") {
+
+                track.scrollBy({
+                    left: movement,
+                    behavior: "smooth"
+                });
+
+            }
+
+
+            if (event.key === "ArrowLeft") {
+
+                track.scrollBy({
+                    left: -movement,
+                    behavior: "smooth"
+                });
+
+            }
+
+        });
+
+    });
+
+
+    /*
+        NAVIGATION
+
+        Smooth scrolling is applied to internal
+        section links such as:
+
+        #about
+        #services
+        #products
+        #portfolio
+        #faq
+        #contact
+        #process
+    */
+
+    const internalLinks = document.querySelectorAll(
+        'a[href^="#"]'
+    );
+
+    const menuToggle = document.querySelector(".menu-toggle");
+    const primaryNavigation = document.getElementById("primary-navigation");
+    const setMenuOpen = function (isOpen) {
+        menuToggle.setAttribute("aria-expanded", String(isOpen));
+        menuToggle.setAttribute(
+            "aria-label",
+            isOpen ? "Close navigation menu" : "Open navigation menu"
+        );
+    };
+
+    if (menuToggle && primaryNavigation) {
+        menuToggle.addEventListener("click", function () {
+            setMenuOpen(menuToggle.getAttribute("aria-expanded") !== "true");
+        });
+
+        document.addEventListener("keydown", function (event) {
+            if (
+                event.key === "Escape" &&
+                menuToggle.getAttribute("aria-expanded") === "true"
+            ) {
+                setMenuOpen(false);
+                menuToggle.focus();
+            }
+        });
+    }
+
+
+    internalLinks.forEach(function (link) {
+
+        link.addEventListener("click", function (event) {
+
+            if (
+                menuToggle &&
+                primaryNavigation &&
+                primaryNavigation.contains(link)
+            ) {
+                setMenuOpen(false);
+            }
+
+            const targetId =
+                link.getAttribute("href");
+
+
+            /*
+                Ignore links that only contain "#".
+            */
+
+            if (
+                !targetId ||
+                targetId === "#"
+            ) {
+                return;
+            }
+
+
+            const target =
+                document.querySelector(targetId);
+
+
+            if (target) {
+
+                event.preventDefault();
+
+
+                target.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start"
+                });
+
+
+                /*
+                    Update the URL hash without
+                    causing another jump.
+                */
+
+                history.pushState(
+                    null,
+                    "",
+                    targetId
+                );
+
+            }
+
+        });
+
+    });
+
+
+    /*
+        TOUCH / MOBILE SUPPORT
+
+        The browser naturally supports touch
+        swiping because the carousel tracks use
+        horizontal overflow.
+
+        This small enhancement makes the swipe
+        movement feel smoother on mobile.
+    */
+
+    carouselTracks.forEach(function (track) {
+
+        let startX = 0;
+        let startScrollLeft = 0;
+
+
+        track.addEventListener(
+            "touchstart",
+            function (event) {
+
+                startX =
+                    event.touches[0].pageX;
+
+                startScrollLeft =
+                    track.scrollLeft;
+
+            },
+            {
+                passive: true
+            }
+        );
+
+
+        track.addEventListener(
+            "touchmove",
+            function (event) {
+
+                const currentX =
+                    event.touches[0].pageX;
+
+                const difference =
+                    startX - currentX;
+
+
+                track.scrollLeft =
+                    startScrollLeft + difference;
+
+            },
+            {
+                passive: true
+            }
+        );
+
+    });
+
+
+    /*
+        UPDATE CAROUSEL AFTER RESIZE
+
+        This makes sure the arrows continue
+        calculating the correct item width after
+        changing from desktop to mobile.
+    */
+
+    window.addEventListener(
+        "resize",
+        function () {
+
+            carouselTracks.forEach(function (track) {
+
+                /*
+                    Force browser to recalculate
+                    the current carousel dimensions.
+                */
+
+                track.style.scrollBehavior = "smooth";
+
+            });
+
+        }
+    );
+
+});
+
+/*  
+    Form scripts 
+*/
+
+const deliveryForm = document.getElementById('deliveryForm');
+const otherCheckbox = document.getElementById('choiceOther');
+const otherInput = document.getElementById('otherInput');
+
+deliveryForm.addEventListener("submit", (event) => {
+    const submitConfirmation = confirm("Are you ready to submit?");
+
+    if (submitConfirmation === true){
+        alert("Your information was submitted succesfully! Thank you for reaching out!");
+    } else {
+        event.preventDefault();
+    }
+});
+
+deliveryForm.addEventListener("reset", (event) => {
+    const resetConfirm = confirm("Are you sure you want to reset?");
+
+    if (resetConfirm === false){
+        event.preventDefault();
+    }  
+});
+
+otherCheckbox.addEventListener("change", () => {
+    otherInput.disabled = !otherCheckbox.checked;
+});
+
+// no resubmission pop-up window when website is refreshed
+if (window.history.replaceState) {
+    window.history.replaceState(null, null, window.location.href);
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+    const viewer = document.querySelector(".image-viewer");
+    const viewerImage = viewer.querySelector(".image-viewer-picture");
+    const viewerCaption = viewer.querySelector(".image-viewer-caption");
+    const closeButton = viewer.querySelector(".image-viewer-close");
+    const viewableImages = document.querySelectorAll(
+        ".services .slider-image, .products .slider-image, .portfolio-section .portfolio-thumb, .materials-section .material-image img"
+    );
+
+    viewableImages.forEach(function (image) {
+        image.tabIndex = 0;
+        image.setAttribute("role", "button");
+        image.setAttribute("aria-haspopup", "dialog");
+        image.setAttribute("aria-label", `View full image: ${image.alt}`);
+
+        function openViewer() {
+            viewerImage.src = image.currentSrc || image.src;
+            viewerImage.alt = image.alt;
+            viewerCaption.textContent = image.alt;
+            viewer.showModal();
+        }
+
+        image.addEventListener("click", openViewer);
+        image.addEventListener("keydown", function (event) {
+            if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                openViewer();
+            }
+        });
+    });
+
+    closeButton.addEventListener("click", function () {
+        viewer.close();
+    });
+
+    viewer.addEventListener("keydown", function (event) {
+        if (event.key === "Escape") {
+            event.preventDefault();
+            viewer.close();
+        }
+    });
+
+    viewer.addEventListener("click", function (event) {
+        if (event.target === viewer) {
+            viewer.close();
+        }
+    });
+});
+
+// MATERIALS CAROUSEL
+document.addEventListener("DOMContentLoaded", function () {
+    const materialsTrack = document.getElementById("materials-track");
+    const materialButtons = document.querySelectorAll("[data-material-direction]");
+
+    if (!materialsTrack) return;
+
+    // Calculate the distance to move based on one card.
+    function getMaterialScrollAmount() {
+        const card = materialsTrack.querySelector(".material-card");
+
+        if (!card) return 300;
+
+        const styles = window.getComputedStyle(materialsTrack);
+        const gap = parseFloat(styles.columnGap) || 0;
+
+        return card.offsetWidth + gap;
+    }
+
+    // Move the carousel.
+    function moveMaterials(direction) {
+        materialsTrack.scrollBy({
+            left: getMaterialScrollAmount() * direction,
+            behavior: "smooth"
+        });
+    }
+
+    // Previous and next buttons.
+    materialButtons.forEach(function (button) {
+        button.addEventListener("click", function () {
+            const direction = Number(button.dataset.materialDirection);
+            moveMaterials(direction);
+        });
+    });
+
+    // Keyboard arrow controls.
+    materialsTrack.addEventListener("keydown", function (event) {
+        if (event.key === "ArrowRight") {
+            event.preventDefault();
+            moveMaterials(1);
+        }
+
+        if (event.key === "ArrowLeft") {
+            event.preventDefault();
+            moveMaterials(-1);
+        }
+    });
+
+    // Mouse wheel horizontal scrolling.
+    materialsTrack.addEventListener("wheel", function (event) {
+        if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
+            event.preventDefault();
+
+            materialsTrack.scrollBy({
+                left: event.deltaY,
+                behavior: "auto"
+            });
+        }
+    }, { passive: false });
+
+    // Touch swiping is supported through native horizontal scrolling.
+});
